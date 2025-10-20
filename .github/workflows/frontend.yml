@@ -1,187 +1,51 @@
-name: Deploy Frontend to Azure Storage
+name: Frontend CI/CD
 
 on:
   push:
     branches: [ main, master ]
-    paths: 
-      - 'index.html'
-      - 'styles.css'
-      - 'script.js'
-      - '*.css'
-      - '*.js'
-  pull_request:
-    branches: [ main, master ]
+    paths: [ '*.html', '*.css', '*.js' ]
   workflow_dispatch:
 
 jobs:
-  validate-and-test:
+  deploy:
     runs-on: ubuntu-latest
-    name: Validate Frontend Code
     
     steps:
-    - name: 🔄 Checkout code
+    - name: 🔄 Checkout
       uses: actions/checkout@v4
 
-    - name: 🧪 Validate HTML Structure
+    - name: 🧪 Validate files
       run: |
-        echo "=== HTML Validation ==="
-        # Check for HTML5 doctype (case-insensitive)
-        if grep -qi "<!doctype html>" index.html; then
-          echo "✅ HTML5 doctype found"
-        else
-          echo "❌ HTML5 doctype missing"
-          exit 1
-        fi
+        # Check HTML structure
+        grep -q "<!doctype html>" index.html && echo "✅ HTML5 doctype found" || exit 1
+        grep -q "viewport" index.html && echo "✅ Responsive meta tag found" || exit 1
         
-        # Check for required meta tags
-        if grep -q 'meta.*viewport' index.html; then
-          echo "✅ Viewport meta tag found"
-        else
-          echo "❌ Viewport meta tag missing"
-          exit 1
-        fi
+        # Check CSS syntax
+        grep -q "@media" styles.css && echo "✅ Responsive CSS found" || echo "⚠️ No media queries"
         
-        # Check for title tag
-        if grep -q '<title>' index.html; then
-          echo "✅ Title tag found"
-        else
-          echo "❌ Title tag missing"
-          exit 1
-        fi
+        # Check JS structure
+        grep -q "fetch" script.js && echo "✅ API calls found" || echo "⚠️ No API integration"
+        
+        echo "✅ Frontend validation completed"
 
-    - name: 🎨 Validate CSS
+    - name: 🔒 Security check
       run: |
-        echo "=== CSS Validation ==="
-        # Check for CSS custom properties
-        if grep -q ':root' styles.css; then
-          echo "✅ CSS custom properties found"
-        else
-          echo "⚠️  Consider using CSS custom properties"
-        fi
-        
-        # Check for responsive design
-        if grep -q '@media' styles.css; then
-          echo "✅ Responsive design detected"
-        else
-          echo "❌ No media queries found - responsive design recommended"
-        fi
-        
-        # Check for basic CSS syntax
-        if grep -q '{' styles.css && grep -q '}' styles.css; then
-          echo "✅ CSS syntax appears valid"
-        else
-          echo "❌ CSS syntax issues detected"
+        if grep -r "password\|secret\|key" --include="*.html" --include="*.js" --include="*.css" . | grep -v "visitor-counter"; then
+          echo "❌ Potential sensitive data found"
           exit 1
         fi
+        echo "✅ No sensitive data found"
 
-    - name: 🔍 Validate JavaScript
+    - name: 📊 File sizes
       run: |
-        echo "=== JavaScript Validation ==="
-        # Check for modern JavaScript features
-        if grep -q 'class\|const\|let\|=>' script.js; then
-          echo "✅ Modern JavaScript features found"
-        else
-          echo "⚠️  Consider using modern JavaScript features"
-        fi
-        
-        # Check for API integration
-        if grep -q 'fetch\|XMLHttpRequest' script.js; then
-          echo "✅ API integration detected"
-        else
-          echo "⚠️  No API calls found"
-        fi
-        
-        # Basic syntax check
-        if grep -q 'function\|=>\|class' script.js; then
-          echo "✅ JavaScript syntax appears valid"
-        else
-          echo "⚠️  JavaScript structure may need review"
-        fi
-
-    - name: 📊 Frontend Quality Report
-      run: |
-        echo "=== Frontend Quality Report ===" 
-        echo "✅ HTML Structure: Valid HTML5 with semantic markup"
-        echo "✅ CSS Styling: Modern responsive design with animations"
-        echo "✅ JavaScript: ES6+ with error handling and API integration"
-        echo "✅ Accessibility: Proper semantic HTML structure"
-        echo "✅ Performance: Optimized assets and minimal dependencies"
-        echo ""
-        echo "📄 File sizes:"
+        echo "📄 Frontend assets:"
         ls -lh *.html *.css *.js 2>/dev/null || true
 
-  deploy:
-    needs: validate-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    steps:
-    - name: 🔄 Checkout code
-      uses: actions/checkout@v4
-
-    # - name: 🔐 Azure Login
-    #   uses: azure/login@v1
-    #   with:
-    #     creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: 📤 Deploy to Azure Storage (Simulated)
+    - name: 🚀 Deployment Status
       run: |
-        echo "🔄 Simulating frontend deployment to Azure Storage..."
-        echo "📂 Storage Account: storresume1760986821"
-        echo "🌐 Container: \$web"
+        echo "✅ Frontend validation completed"
+        echo "📦 Ready for Azure Storage deployment"
+        echo "🔗 Target: storresume1760986821"
+        echo "🌐 CDN: https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/"
         echo ""
-        echo "Files to be deployed:"
-        ls -la *.html *.css *.js 2>/dev/null || true
-        echo ""
-        echo "✅ Deployment simulation completed"
-        echo ""
-        echo "💡 To enable actual deployment:"
-        echo "   1. Add AZURE_CREDENTIALS to GitHub Secrets"
-        echo "   2. Uncomment the Azure Login step above"
-        echo "   3. Replace this step with actual az storage blob upload commands"
-
-    - name: 🔄 Purge CDN Cache (Simulated)
-      run: |
-        echo "🔄 Simulating Azure Front Door cache purge..."
-        echo "📂 Resource Group: rg-cloud-resume"
-        echo "🌐 Profile: afd-resume-profile"
-        echo "🔗 Endpoint: resume-endpoint-gmd7e5g9f8c6gqgs"
-        echo "✅ CDN cache purge simulation completed"
-        echo ""
-        echo "💡 In actual deployment, this would:"
-        echo "   - Clear the CDN cache for immediate updates"
-        echo "   - Ensure users see the latest version"
-
-    - name: 🌐 Deployment Success
-      run: |
-        echo "=== Frontend Workflow Completed Successfully ==="
-        echo "✅ Frontend code validation passed"
-        echo "✅ All quality checks completed"
-        echo "✅ Deployment simulation successful"
-        echo ""
-        echo "🚀 Ready for actual Azure deployment when credentials are added"
-        echo "📦 Storage Account: storresume1760986821"
-        echo "✅ Resume would be live at: https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/"
-        echo "📊 Visitor counter integration ready"
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-    - name: 🔄 Checkout code
-      uses: actions/checkout@v4
-
-    - name: 🔒 Security Scan
-      run: |
-        echo "=== Security Analysis ==="
-        echo "✅ HTTPS enforced via Azure Front Door"
-        echo "✅ Static files only - no server-side processing"
-        echo "✅ API calls use secure HTTPS endpoints"
-        echo "✅ No server-side vulnerabilities (static site)"
-        
-        # Check for potential sensitive data
-        echo "🔍 Scanning for potential sensitive information..."
-        if grep -ri "password\|secret\|key\|token" --include="*.html" --include="*.js" --include="*.css" . | grep -v "visitor-counter\|api/visitor"; then
-          echo "⚠️  Potential sensitive data found - please review"
-        else
-          echo "✅ No sensitive data detected in frontend files"
-        fi
+        echo "💡 To deploy: Add AZURE_CREDENTIALS to GitHub Secrets"

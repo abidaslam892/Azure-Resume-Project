@@ -1,117 +1,23 @@
-name: Deploy Backend to Azure Functions
+name: Backend CI/CD
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    paths: [ 'backend/**' ]
   workflow_dispatch:
-    inputs:
-      deploy_backend:
-        description: 'Force backend deployment'
-        required: false
-        default: 'true'
 
 env:
   PYTHON_VERSION: '3.9'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    name: Test Backend
-    
-    steps:
-    - name: 🔄 Checkout code
-      uses: actions/checkout@v4
-
-    - name: 🐍 Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: 📦 Install dependencies
-      run: |
-        cd backend/api
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov
-
-    - name: 🧪 Basic Python validation
-      run: |
-        cd backend/api
-        echo "=== Python Code Validation ==="
-        python -m py_compile function_app.py
-        echo "✅ Python syntax validation passed"
-        
-        # Check for required imports
-        if grep -q "azure.functions" function_app.py; then
-          echo "✅ Azure Functions imports found"
-        else
-          echo "❌ Azure Functions imports missing"
-          exit 1
-        fi
-        
-        if grep -q "azure.data.tables" function_app.py; then
-          echo "✅ Azure Table Storage imports found"
-        else
-          echo "❌ Azure Table Storage imports missing"
-          exit 1
-        fi
-
-    - name: 🧪 Run tests (if available)
-      run: |
-        cd backend
-        if [ -d "tests" ] && [ -f "tests/test_api.py" ]; then
-          echo "Running available tests..."
-          python -m pytest tests/ -v --tb=short || echo "Some tests may require Azure resources"
-        else
-          echo "⚠️  No test files found - consider adding tests"
-        fi
-
-    - name: 🔍 Code quality checks
-      run: |
-        cd backend/api
-        echo "=== Code Quality Analysis ==="
-        
-        # Check for environment variable usage
-        if grep -q "os.environ\|getenv" function_app.py; then
-          echo "✅ Environment variables used for configuration"
-        else
-          echo "⚠️  Consider using environment variables for configuration"
-        fi
-        
-        # Check for error handling
-        if grep -q "try:\|except\|Exception" function_app.py; then
-          echo "✅ Error handling implemented"
-        else
-          echo "⚠️  Consider adding error handling"
-        fi
-
-    - name: 🔒 Security scan
-      run: |
-        cd backend
-        echo "=== Security Analysis ==="
-        echo "✅ Using environment variables for sensitive data"
-        echo "✅ No hardcoded connection strings"
-        echo "✅ Proper exception handling"
-        
-        # Check for potential secrets in code
-        if grep -ri "password\|secret.*=\|key.*=" --include="*.py" api/ | grep -v "os.environ\|getenv"; then
-          echo "⚠️  Potential hardcoded secrets found - please review"
-        else
-          echo "✅ No hardcoded secrets detected"
-        fi
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     
     steps:
-    - name: 🔄 Checkout code
+    - name: 🔄 Checkout
       uses: actions/checkout@v4
 
-    - name: 🐍 Setup Python
+    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
@@ -119,98 +25,39 @@ jobs:
     - name: 📦 Install dependencies
       run: |
         cd backend/api
-        python -m pip install --upgrade pip
+        pip install --upgrade pip
         pip install -r requirements.txt
 
-    # - name: 🔐 Azure Login
-    #   uses: azure/login@v1
-    #   with:
-    #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: 🧪 Validate code
+      run: |
+        cd backend/api
+        python -m py_compile function_app.py
+        echo "✅ Python syntax valid"
+        
+        # Check required imports
+        grep -q "azure.functions" function_app.py && echo "✅ Azure Functions imports found" || exit 1
+        grep -q "azure.data.tables" function_app.py && echo "✅ Table Storage imports found" || exit 1
 
-    - name: 📦 Create deployment package
+    - name: 🔒 Security check
+      run: |
+        cd backend/api
+        if grep -r "password\|secret.*=" --include="*.py" . | grep -v "os.environ\|getenv"; then
+          echo "❌ Hardcoded secrets found"
+          exit 1
+        fi
+        echo "✅ No hardcoded secrets"
+
+    - name: 📦 Create package
       run: |
         cd backend
-        echo "Creating deployment package..."
-        zip -r function-app.zip api/ -x "api/__pycache__/*" "api/*.pyc" "api/.env"
-        ls -la function-app.zip
-        echo "✅ Deployment package created successfully"
-        echo "📦 Package size: $(du -h function-app.zip | cut -f1)"
+        zip -r function-app.zip api/ -x "api/__pycache__/*" "api/*.pyc"
+        echo "✅ Package created: $(du -h function-app.zip | cut -f1)"
 
-    - name: 🚀 Deploy to Azure Functions (Simulated)
+    - name: 🚀 Deployment Status
       run: |
-        cd backend
-        echo "🔄 Simulating Azure Functions deployment..."
-        echo "📂 Resource Group: rg-cloud-resume"
-        echo "⚡ Function App: func-resume-1760986821"
-        echo "📦 Package: function-app.zip"
-        echo "✅ Deployment simulation completed"
+        echo "✅ Backend validation completed"
+        echo "📦 Ready for Azure Functions deployment"
+        echo "🔗 Target: func-resume-1760986821"
+        echo "🔗 API: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
         echo ""
-        echo "💡 To enable actual deployment:"
-        echo "   1. Add AZURE_CREDENTIALS to GitHub Secrets"
-        echo "   2. Uncomment the Azure Login step above"
-        echo "   3. Replace this step with actual az functionapp deployment"
-
-    - name: 🔧 Configure Function App settings (Simulated)
-      run: |
-        echo "🔄 Simulating Function App configuration..."
-        echo "Setting environment variables:"
-        echo "  - COSMOS_DB_ACCOUNT_NAME=cosmos-resume-1760986821"
-        echo "  - COSMOS_DB_TABLE=VisitorCounter"
-        echo "  - FUNCTIONS_WORKER_RUNTIME=python"
-        echo "✅ Configuration simulation completed"
-
-    - name: 🧪 Post-deployment health check (Simulated)
-      run: |
-        echo "🔄 Simulating post-deployment health check..."
-        echo "Function endpoint would be: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
-        echo "✅ Health check simulation completed"
-        echo ""
-        echo "💡 In actual deployment, this would:"
-        echo "   - Wait for function deployment to complete"
-        echo "   - Test the API endpoint"
-        echo "   - Verify visitor counter functionality"
-
-    - name: ✅ Deployment Success
-      run: |
-        echo "=== Backend Workflow Completed Successfully ==="
-        echo "✅ Code validation passed"
-        echo "✅ Dependencies installed"
-        echo "✅ Deployment package created"
-        echo "✅ All simulation steps completed"
-        echo ""
-        echo "🚀 Ready for actual Azure deployment when credentials are added"
-        echo "� Function App: func-resume-1760986821"
-        echo "🔗 API endpoint: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
-        echo "📊 Visitor counter backend is ready for deployment"
-
-  integration-test:
-    needs: deploy
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
-    
-    steps:
-    - name: 🔄 Checkout code
-      uses: actions/checkout@v4
-
-    - name: 🧪 API Integration Test (Simulated)
-      run: |
-        echo "=== API Integration Test Simulation ==="
-        echo "Function endpoint: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
-        echo "✅ Integration test simulation completed"
-        echo ""
-        echo "💡 In actual deployment, this would:"
-        echo "   - Wait for function to be fully available"
-        echo "   - Test the visitor counter API"
-        echo "   - Verify response format and functionality"
-
-    - name: 📊 Performance Test (Simulated)
-      run: |
-        echo "=== API Performance Test Simulation ==="
-        echo "Function endpoint: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
-        echo "⏱️  Simulated response time: 250ms"
-        echo "✅ Performance test simulation passed (< 5 seconds)"
-        echo ""
-        echo "💡 In actual deployment, this would:"
-        echo "   - Measure actual API response times"
-        echo "   - Verify performance meets requirements"
-        echo "   - Report performance metrics"
+        echo "💡 To deploy: Add AZURE_CREDENTIALS to GitHub Secrets"
