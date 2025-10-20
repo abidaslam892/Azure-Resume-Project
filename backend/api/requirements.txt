@@ -3,43 +3,13 @@
 
 # Azure Functions Core
 azure-functions>=1.18.0
-azure-functions-worker>=1.0.0
 
-# Azure SDK for Python
-azure-cosmos>=4.5.0
+# Azure SDK for Python - Essential only
 azure-data-tables>=12.4.0
 azure-identity>=1.15.0
-azure-keyvault-secrets>=4.7.0
-azure-storage-blob>=12.19.0
-
-# Azure Durable Functions (for complex workflows if needed)
-azure-durable-functions>=1.2.9
 
 # HTTP and JSON handling
 requests>=2.31.0
-urllib3>=2.0.0
 
 # Date and time utilities
 python-dateutil>=2.8.2
-
-# Logging and monitoring
-opencensus-ext-azure>=1.1.13
-applicationinsights>=0.11.10
-
-# Testing dependencies (for local development)
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-pytest-mock>=3.11.0
-
-# Code quality and formatting
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.5.0
-
-# Environment management
-python-dotenv>=1.0.0
-
-# Development utilities
-pydantic>=2.0.0  # For data validation
-httpx>=0.24.0    # Modern HTTP client for testing
