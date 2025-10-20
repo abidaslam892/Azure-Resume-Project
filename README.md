@@ -2,17 +2,49 @@
 
 [![Deploy Frontend](https://github.com/abidaslam892/Azure-Resume-Project/actions/workflows/frontend.yml/badge.svg)](https://github.com/abidaslam892/Azure-Resume-Project/actions/workflows/frontend.yml)
 [![Deploy Backend](https://github.com/abidaslam892/Azure-Resume-Project/actions/workflows/backend.yml/badge.svg)](https://github.com/abidaslam892/Azure-Resume-Project/actions/workflows/backend.yml)
+[![Security](https://img.shields.io/badge/Security-GitHub%20Secrets-green)](./SECURITY.md)
+[![Azure](https://img.shields.io/badge/Cloud-Microsoft%20Azure-blue)](https://azure.microsoft.com/)
 
-> **Live Demo**: [https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/](https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/)
+> **🌐 Live Demo**: [https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/](https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/)
 
-This repository contains my implementation of the **Cloud Resume Challenge** using Microsoft Azure. It showcases a professional resume website with a serverless visitor counter, demonstrating modern cloud development practices and Azure services integration.
+A complete implementation of the **Cloud Resume Challenge** using Microsoft Azure services. This project demonstrates modern cloud architecture, DevOps practices, and full-stack development with enterprise-grade security and automation.
 
-## 👨‍💼 About Me
+## 👨‍💼 Professional Profile
 
-**Abid Aslam** - Solution Architect with 15+ years of experience in Telecom & Cloud Operations
-- 📧 Email: abidaslam.123@gmail.com  
-- 📱 Phone: +92 311 5644948
-- 🌍 Location: Pakistan
+**Abid Aslam** - Solution Architect | 15+ Years Experience  
+📧 **Email**: abidaslam.123@gmail.com  
+📱 **Phone**: +92 311 5644948  
+🌍 **Location**: Pakistan  
+💼 **Expertise**: Telecom & Cloud Operations, DevOps Architecture
+
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TB
+    A[👤 User Browser] --> B[🌐 Azure Front Door CDN]
+    B --> C[📄 Azure Storage Static Website]
+    C --> D[⚡ JavaScript Visitor Counter]
+    D --> E[🔧 Azure Functions API]
+    E --> F[🗄️ CosmosDB Table Storage]
+    
+    G[📦 GitHub Repository] --> H[🔄 GitHub Actions CI/CD]
+    H --> C
+    H --> E
+    
+    I[🔒 GitHub Secrets] --> H
+    J[🛡️ Service Principal] --> I
+```
+
+### 🔧 Azure Services Architecture
+
+| Service | Purpose | SKU/Configuration | Monthly Cost |
+|---------|---------|-------------------|--------------|
+| **Azure Storage** | Static website hosting | Standard LRS | ~$2-3 |
+| **Azure Front Door** | Global CDN + SSL/TLS | Standard tier | ~$12-15 |
+| **Azure Functions** | Serverless API backend | Consumption plan | ~$5-8 |
+| **CosmosDB** | Visitor counter database | Table API, 400 RU/s | ~$8-12 |
+| **Application Insights** | Monitoring & analytics | Pay-as-you-go | ~$1-2 |
+| **Total** | **Complete infrastructure** | **Production-ready** | **~$28-30** |
 
 ## 📋 Challenge Requirements Completed
 

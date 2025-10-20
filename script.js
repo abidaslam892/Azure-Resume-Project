@@ -1,16 +1,38 @@
 /**
- * Visitor Counter Script for Cloud Resume Challenge
- * Connects to Azure Function API to track and display page visits
+ * Professional Visitor Counter Script - Azure Resume Project
+ * 
+ * This script provides a robust visitor counter implementation with:
+ * - Comprehensive error handling and retry logic
+ * - Professional logging and debugging capabilities  
+ * - Modern ES6+ JavaScript features
+ * - Accessibility and user experience optimization
+ * - Enterprise-grade API integration patterns
+ * 
+ * @author Abid Aslam
+ * @version 2.0.0
+ * @license MIT
  */
 
 class VisitorCounter {
     constructor() {
+        // Configuration
         this.apiUrl = 'https://func-resume-1760986821.azurewebsites.net/api/visitor-counter';
         this.countElement = document.getElementById('visitor-count');
         this.retryAttempts = 3;
         this.retryDelay = 1000; // 1 second
+        this.timeout = 10000; // 10 seconds
         
-        this.init();
+        // State management
+        this.isLoading = false;
+        this.hasError = false;
+        this.currentCount = 0;
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
     }
 
     /**
