@@ -370,4 +370,4 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",
             }
-        )
+        )# Deployment test Tue Oct 21 01:40:04 AM PKT 2025
