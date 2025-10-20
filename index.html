@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Abid Aslam — CV</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#051026;
+      --card:#071429;
+      --muted:#93a3b8;
+      --accent:#7dd3fc;
+      --accent-2:#60a5fa;
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      color-scheme: dark;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{min-height:100vh}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,0.06), transparent 8%),
+                  linear-gradient(180deg,#021022 0%, #04162a 100%);
+      color:#e6f3ff;
+      -webkit-font-smoothing:antialiased;
+      padding:20px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      font-size:16px;
+      line-height:1.45;
+      min-height:100vh;
+    }
+
+    .container{
+      width:100%;
+      max-width:1200px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:calc(var(--radius));
+      padding:24px;
+      box-shadow: 0 12px 40px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:24px;
+      align-items:start;
+      margin:20px 0;
+    }
+
+    /* Left column */
+    .profile-card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      padding:20px;
+      border-radius:12px;
+      position:relative;
+      overflow:hidden;
+    }
+    .avatar{
+      width:120px;height:120px;border-radius:16px;overflow:hidden;margin-bottom:14px;border:2px solid rgba(255,255,255,0.06);
+    }
+    .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    h1{font-size:22px;margin:0 0 6px 0;font-weight:800}
+    .title{font-weight:600;color:var(--muted);font-size:13px;margin-bottom:12px}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:linear-gradient(90deg, rgba(125,211,252,0.08), rgba(96,165,250,0.06));color:var(--accent);font-weight:700;font-size:13px}
+    .contact-list{display:flex;flex-direction:column;gap:8px;font-size:14px;margin-top:14px}
+    .contact-item{display:flex;gap:10px;align-items:center;color:var(--muted)}
+
+    .logo-row{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+    .company-badge{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:var(--glass);min-width:140px}
+    .company-badge svg{width:34px;height:34px;flex:0 0 34px}
+    .company-badge .cname{font-weight:700;font-size:13px;color:#dff7ff}
+
+    /* Right Column */
+    .main{
+      padding:20px 18px;
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      overflow-y: auto;
+      max-height: none;
+    }
+    .section{margin-bottom:24px}
+    .section h2{margin:0 0 12px 0;font-size:14px;color:var(--accent);letter-spacing:0.6px;text-transform:uppercase}
+    .summary{color:var(--muted);font-size:14px;line-height:1.6}
+    .job{padding:16px;border-radius:10px;background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));margin-bottom:16px;border:1px solid rgba(125,211,252,0.04)}
+    .job .role{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .role h3{margin:0;font-size:15px;line-height:1.3}
+    .company{color:var(--muted);font-size:13px;margin-top:4px}
+    .dates{color:var(--muted);font-size:13px;white-space:nowrap}
+    .bullets{margin:8px 0 0 0;padding-left:18px;color:var(--muted);line-height:1.5}
+
+    .tags{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{background:linear-gradient(90deg, rgba(125,211,252,0.04), rgba(96,165,250,0.03));padding:8px 10px;border-radius:999px;font-weight:700;font-size:13px;color:var(--accent)}
+
+    .logo-inline{display:flex;gap:12px;align-items:center}
+    .logo-inline img{height:28px;display:block}
+
+    .download{display:inline-block;margin-top:8px;padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#03243a;font-weight:800;text-decoration:none}
+
+    /* Visitor Counter Styles */
+    .visitor-counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #051026;
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(125, 211, 252, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 12px;
+    }
+
+    .visitor-counter:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(125, 211, 252, 0.3);
+    }
+
+    .visitor-label {
+      opacity: 0.9;
+      font-weight: 600;
+    }
+
+    .visitor-number {
+      background: rgba(5, 16, 38, 0.15);
+      padding: 0.2rem 0.5rem;
+      border-radius: 15px;
+      font-weight: 800;
+      animation: fadeIn 0.5s ease-in;
+      min-width: 2rem;
+      text-align: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .visitor-counter.error {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+      color: white;
+    }
+
+    .visitor-counter.loading {
+      background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+      color: white;
+    }
+
+    .visitor-counter.loading .visitor-number {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* small print note */
+    footer.note{color:var(--muted);font-size:13px;margin-top:10px}
+
+    @media (max-width: 1200px) {
+      .container {
+        max-width: 95%;
+        padding: 20px;
+        gap: 20px;
+      }
+    }
+
+    @media (max-width: 880px) {
+      body {
+        padding: 10px;
+      }
+      .container {
+        grid-template-columns: 1fr; 
+        padding: 16px;
+        gap: 16px;
+        margin: 10px 0;
+      }
+      .avatar {
+        margin: 0 auto;
+        width: 100px;
+        height: 100px;
+      }
+      .profile-card {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .profile-card > div {
+        flex: 1;
+        min-width: 200px;
+      }
+      .visitor-counter {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+      }
+      .main {
+        padding: 16px;
+      }
+      .section {
+        margin-bottom: 16px;
+      }
+      .job {
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .role {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      .title {
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 5px;
+        font-size: 14px;
+      }
+      .container {
+        padding: 12px;
+        border-radius: 8px;
+      }
+      .profile-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      .contact-list {
+        font-size: 12px;
+      }
+      .company-badge {
+        min-width: auto;
+        flex-direction: column;
+        text-align: center;
+        padding: 6px;
+      }
+      .logo-row {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <aside class="profile-card" aria-label="Profile">
+      <div style="display:flex;flex-direction:column;align-items:flex-start">
+        <div class="avatar">
+          <img src="https://images.unsplash.com/photo-1547363327-48a7a2a3a2c8?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Abid Aslam">
+        </div>
+        <h1>Abid Aslam</h1>
+        <div class="title">Solution Architect — Telecom & Cloud Operations</div>
+        <div class="pill">15+ years • Telecom & DevOps</div>
+        
+        <!-- Visitor Counter -->
+        <div class="visitor-counter">
+          <span class="visitor-label">Page Views:</span>
+          <span id="visitor-count" class="visitor-number">Loading...</span>
+        </div>
+
+        <div class="contact-list">
+          <div class="contact-item"><strong>Email</strong><span style="margin-left:auto;color:var(--muted)">abidaslam.123@gmail.com</span></div>
+          <div class="contact-item"><strong>Phone</strong><span style="margin-left:auto;color:var(--muted)">+92 311 5644948</span></div>
+          <div class="contact-item"><strong>Location</strong><span style="margin-left:auto;color:var(--muted)">Islamabad, Pakistan</span></div>
+          <div class="contact-item"><strong>LinkedIn</strong><span style="margin-left:auto;color:var(--muted)">linkedin.com/in/yourhandle</span></div>
+        </div>
+
+        <div class="logo-row" aria-hidden="true">
+          <!-- Stylized inline SVG badges used instead of external logos to ensure portability -->
+
+          <div class="company-badge" title="Zong Pakistan">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect rx="8" width="48" height="48" fill="#032B4A"/><text x="24" y="30" font-size="16" text-anchor="middle" fill="#7DD3FC" font-weight="800">Z</text></svg>
+            <div class="cname">Zong</div>
+          </div>
+
+          <div class="company-badge" title="Ericsson">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect rx="8" width="48" height="48" fill="#041226"/><path d="M10 34 L22 14 L34 34 Z" fill="#60A5FA" opacity="0.95"/></svg>
+            <div class="cname">Ericsson</div>
+          </div>
+
+          <div class="company-badge" title="Huawei">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect rx="8" width="48" height="48" fill="#1A1726"/><g fill="#FCA5A5"><path d="M24 12 C29 12 32 16 32 16 C28 20 20 20 16 16 C16 16 19 12 24 12 Z"/></g></svg>
+            <div class="cname">Huawei</div>
+          </div>
+
+          <div class="company-badge" title="Nokia">
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect rx="8" width="48" height="48" fill="#041123"/><text x="24" y="30" font-size="14" text-anchor="middle" fill="#A7F3D0" font-weight="700">N</text></svg>
+            <div class="cname">Nokia</div>
+          </div>
+
+        </div>
+
+        <div style="margin-top:18px">
+          <div style="font-weight:800;color:var(--accent);margin-bottom:8px">Core Skills & Tools</div>
+          <div class="tags">
+            <span class="tag">AWS</span>
+            <span class="tag">Azure</span>
+            <span class="tag">VMware (vSphere / ESXi)</span>
+            <span class="tag">Terraform / IaC</span>
+            <span class="tag">CI/CD (Jenkins, GitLab)</span>
+            <span class="tag">Docker & Kubernetes</span>
+            <span class="tag">Zabbix / Nagios</span>
+            <span class="tag">Kafka</span>
+            <span class="tag">Oracle / PLSQL</span>
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
+
+    <section class="main" aria-label="Resume content">
+      <div class="section">
+        <h2>Profile</h2>
+        <p class="summary">Seasoned Telecom Infrastructure & Solution Architect with 15+ years of experience designing, deploying and operating BSS/OCS platforms, leading migrations and delivering high-availability systems. Strong background in cloud architecture (AWS/Azure), virtualization (VMware), automation (Terraform), and observability — with proven success at Zong, Ericsson, Huawei and Nokia projects.</p>
+      </div>
+
+      <div class="section">
+        <h2>Experience</h2>
+
+        <article class="job">
+          <div class="role">
+            <div>
+              <h3>Assistant Manager — IT BSS Operations</h3>
+              <div class="company">CMPAK (Zong Pakistan Ltd) — Islamabad</div>
+            </div>
+            <div class="dates">Feb 2023 — Present</div>
+          </div>
+          <ul class="bullets">
+            <li>Lead SA & Project Manager for CRM / OCS / Rating / Mediation and Billing systems supporting millions of subscribers.</li>
+            <li>Designed solution architecture and optimized platforms using AWS and Azure; responsible for production expansion & DR deployments.</li>
+            <li>Implemented capacity planning, change management and audit compliance (SOX) while coordinating cross-functional stakeholders.</li>
+            <li>Introduced monitoring platforms (Zabbix, Nagios) and incident playbooks to reduce MTTR and improve SLA adherence.</li>
+          </ul>
+        </article>
+
+        <article class="job">
+          <div class="role">
+            <div>
+              <h3>Expert Charging & Billing Solution & Change Manager</h3>
+              <div class="company">Ericsson — Islamabad</div>
+            </div>
+            <div class="dates">Nov 2020 — Feb 2023</div>
+          </div>
+          <ul class="bullets">
+            <li>Managed IN & billing expansion projects, HLD/LLD preparation and third-party integrations (OCC, CCN, SDP).</li>
+            <li>Executed migrations, release management and traffic balancing for OCC/Rating nodes.</li>
+            <li>Owned change management processes, CAB coordination and SOX-compliant audit controls.</li>
+          </ul>
+        </article>
+
+        <article class="job">
+          <div class="role">
+            <div>
+              <h3>Convergent Charging System — Technical Team Lead</h3>
+              <div class="company">Huawei (Ufone Project) — Pakistan</div>
+            </div>
+            <div class="dates">2015 — 2020</div>
+          </div>
+          <ul class="bullets">
+            <li>Led CBS/OCS deployments, subscriber migrations, offline/online migrations and system upgrades.</li>
+            <li>Performed L3 troubleshooting, storage/ATAE server handling and offline data reconciliation for billing cycles.</li>
+          </ul>
+        </article>
+
+        <article class="job">
+          <div class="role">
+            <div>
+              <h3>IN / VAS Engineer — Senior Roles</h3>
+              <div class="company">Nokia / Ericsson (Various Projects)</div>
+            </div>
+            <div class="dates">2007 — 2015</div>
+          </div>
+          <ul class="bullets">
+            <li>Worked across IN platforms, charge@once, IVR/SMSC integration, POS/VOMS and feature rollouts with strict SLA responsibilities.</li>
+          </ul>
+        </article>
+
+      </div>
+
+      <div class="section">
+        <h2>DevOps & Cloud Experience (Highlighted)</h2>
+        <p class="summary">Strong practical experience merging telecom operations with modern DevOps practices to improve deployment velocity and reliability.</p>
+        <ul class="bullets">
+          <li>Cloud: AWS (Solutions Architect level), Azure (VMs, VNet, Azure AD), designing secure, highly available architectures.</li>
+          <li>Virtualization: VMware vSphere, ESXi, vCenter — capacity planning, vSAN and host lifecycle management.</li>
+          <li>Automation & IaC: Terraform for provisioning, automated runbooks for DR and environment provisioning.</li>
+          <li>CI/CD & Containers: Jenkins / GitLab pipelines, Docker containerization; exposure to Kubernetes orchestration concepts.</li>
+          <li>Monitoring & Observability: Zabbix and Nagios deployments for platform health checks, alerting and dashboards.</li>
+          <li>Streaming & Messaging: Kafka for near-real-time charging event streaming and analytics integration.</li>
+          <li>Backup & DB Ops: Oracle 19c migration experience, backup/restore playbooks and capacity planning for DB servers.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Selected Projects & Achievements</h2>
+        <ul class="bullets">
+          <li>Led Oracle 19c migration and rating server firmware upgrades to resolve I/O saturation — improved reliability and reduced ECDRs.</li>
+          <li>Introduced Kafka to the charging pipeline, lowering event latency from minutes to seconds for analytics consumers.</li>
+          <li>Delivered GMLC (Global Mobile Location Service) project and multi-site DR deployments for BSS platforms.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Education & Certifications</h2>
+        <div style="display:flex;justify-content:space-between;gap:20px;align-items:center">
+          <div>
+            <div style="font-weight:800">MCS — Virtual University</div>
+            <div class="company" style="margin-top:6px;color:var(--muted)">2022</div>
+          </div>
+          <div style="text-align:right;color:var(--muted);font-size:13px">MBA — Superior University (2008)</div>
+        </div>
+        <div style="margin-top:8px" class="tags">
+          <span class="tag">AWS Solutions Architect</span>
+          <span class="tag">RHCSA / RHCE</span>
+          <span class="tag">ITIL Foundation</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <a class="download" href="#" onclick="window.print();return false">Print / Save PDF</a>
+        <div class="note" style="margin-top:10px;color:var(--muted)">Tip: open browser Print → Save as PDF for a clean export. Replace placeholder links and tweak content to suit specific job applications.</div>
+      </div>
+
+      <footer class="note">This single-file CV is intentionally self-contained. Edit the HTML in your editor, replace the avatar and LinkedIn URL, and save as <code>index.html</code>.</footer>
+    </section>
+  </div>
+
+  <!-- Visitor Counter Script -->
+  <script src="script.js"></script>
+</body>
+</html>
+</html>

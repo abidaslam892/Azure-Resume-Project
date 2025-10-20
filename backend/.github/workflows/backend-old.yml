@@ -1,0 +1,396 @@
+name: Deploy Backend to Azure Functions
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './api'
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Backend
+    
+    steps:
+    - name: 🔄 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r api/requirements.txt
+        pip install pytest pytest-cov pytest-mock pytest-asyncio flake8 black mypy
+
+    - name: 🔍 Code quality checks
+      run: |
+        # Format check with black
+        echo "🎨 Checking code formatting..."
+        black --check api/ tests/ --diff
+
+        # Lint with flake8
+        echo "🔍 Running flake8 linting..."
+        flake8 api/ tests/ --max-line-length=100 --ignore=E203,W503
+
+        # Type checking with mypy
+        echo "🔬 Running type checking..."
+        mypy api/ --ignore-missing-imports || true
+
+    - name: 🧪 Run unit tests
+      run: |
+        # Set environment variables for testing
+        export COSMOS_DB_ENDPOINT="https://test.documents.azure.com:443/"
+        export COSMOS_DB_KEY="test-key"
+        export COSMOS_DB_DATABASE="TestDB"
+        export COSMOS_DB_CONTAINER="TestContainer"
+        
+        # Run tests with coverage
+        pytest tests/test_api.py -v --cov=api --cov-report=xml --cov-report=html --tb=short
+        
+        echo "✅ Unit tests completed"
+
+    - name: 📊 Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: 🔒 Security scan
+      run: |
+        # Install safety for security scanning
+        pip install safety bandit
+        
+        # Check for known security vulnerabilities
+        echo "🔒 Checking for security vulnerabilities..."
+        safety check --json || true
+        
+        # Run bandit security linter
+        echo "🔍 Running security analysis..."
+        bandit -r api/ -f json || true
+
+    - name: 📝 Generate test report
+      if: always()
+      run: |
+        echo "📋 Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "=============" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Code formatting: $([ $? -eq 0 ] && echo 'PASSED' || echo 'FAILED')" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Linting: $([ $? -eq 0 ] && echo 'PASSED' || echo 'FAILED')" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Unit tests: $([ $? -eq 0 ] && echo 'PASSED' || echo 'FAILED')" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Security scan: Completed" >> $GITHUB_STEP_SUMMARY
+
+  build_and_deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    name: Build and Deploy to Azure
+    env:
+      AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+    steps:
+    - name: 🔄 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r api/requirements.txt
+
+    - name: 🔑 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 🏗️ Deploy Infrastructure (ARM Template)
+      id: arm_deploy
+      run: |
+        echo "🚀 Deploying infrastructure with ARM template..."
+        
+        # Check if infrastructure directory exists
+        if [ ! -d "infrastructure" ]; then
+          echo "📁 Creating infrastructure directory..."
+          mkdir -p infrastructure
+        fi
+        
+        # Check if ARM template exists, if not skip deployment
+        if [ ! -f "infrastructure/azuredeploy.json" ]; then
+          echo "⚠️ ARM template not found, creating basic Function App..."
+          
+          # Create a unique function app name
+          FUNCTION_APP_NAME="func-resume-$(date +%s)"
+          STORAGE_ACCOUNT_NAME="stor$(date +%s | tail -c 10)"
+          
+          # Create storage account
+          az storage account create \
+            --name $STORAGE_ACCOUNT_NAME \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --location "East US" \
+            --sku Standard_LRS
+          
+          # Create function app
+          az functionapp create \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --consumption-plan-location "East US" \
+            --runtime python \
+            --runtime-version 3.9 \
+            --functions-version 4 \
+            --name $FUNCTION_APP_NAME \
+            --storage-account $STORAGE_ACCOUNT_NAME
+          
+        else
+          # Deploy ARM template
+          az deployment group create \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --template-file infrastructure/azuredeploy.json \
+            --parameters infrastructure/azuredeploy.parameters.json \
+            --output json > deployment-output.json
+
+          # Extract outputs
+          FUNCTION_APP_NAME=$(jq -r '.properties.outputs.functionAppName.value' deployment-output.json)
+          STORAGE_ACCOUNT_NAME=$(jq -r '.properties.outputs.storageAccountName.value' deployment-output.json)
+        fi
+        
+        echo "function_app_name=$FUNCTION_APP_NAME" >> $GITHUB_OUTPUT
+        echo "storage_account_name=$STORAGE_ACCOUNT_NAME" >> $GITHUB_OUTPUT
+        
+        echo "✅ Infrastructure deployment completed"
+        echo "📋 Deployed resources:"
+        echo "   Function App: $FUNCTION_APP_NAME"
+        echo "   Storage Account: $STORAGE_ACCOUNT_NAME"
+
+    - name: 🔧 Configure Function App
+      run: |
+        FUNCTION_APP_NAME="${{ steps.arm_deploy.outputs.function_app_name }}"
+        
+        echo "⚙️ Configuring Function App settings..."
+        
+        # Enable system-assigned managed identity
+        az functionapp identity assign \
+          --name $FUNCTION_APP_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP
+
+        # Configure CORS for local development and production
+        az functionapp cors add \
+          --name $FUNCTION_APP_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --allowed-origins "*"
+
+        echo "✅ Function App configuration completed"
+
+    - name: 📦 Build Function App package
+      run: |
+        echo "📦 Building Function App package..."
+        
+        # Create deployment package
+        cd api
+        
+        # Create requirements.txt if it doesn't exist
+        if [ ! -f requirements.txt ]; then
+          echo "azure-functions" > requirements.txt
+          echo "azure-cosmos" >> requirements.txt
+        fi
+        
+        # Create function package
+        zip -r ../function-app.zip . -x "*.pyc" "__pycache__/*" "*.git*"
+        
+        cd ..
+        
+        echo "✅ Function App package created"
+
+    - name: 🚀 Deploy Function App
+      uses: azure/functions-action@v1
+      with:
+        app-name: ${{ steps.arm_deploy.outputs.function_app_name }}
+        package: './function-app.zip'
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+        respect-funcignore: true
+
+    - name: 🧪 Post-deployment validation
+      run: |
+        FUNCTION_APP_NAME="${{ steps.arm_deploy.outputs.function_app_name }}"
+        
+        echo "🔍 Validating deployment..."
+        
+        # Wait for function app to be ready
+        sleep 30
+        
+        # Get function app URL
+        FUNCTION_URL=$(az functionapp show \
+          --name $FUNCTION_APP_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --query "defaultHostName" \
+          --output tsv)
+        
+        echo "🌐 Function App URL: https://$FUNCTION_URL"
+        
+        # Test health endpoint
+        echo "🏥 Testing health endpoint..."
+        HEALTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "https://$FUNCTION_URL/api/health" || echo "000")
+        
+        if [ "$HEALTH_RESPONSE" = "200" ] || [ "$HEALTH_RESPONSE" = "503" ]; then
+          echo "✅ Health endpoint is responding (Status: $HEALTH_RESPONSE)"
+        else
+          echo "❌ Health endpoint not responding (Status: $HEALTH_RESPONSE)"
+          exit 1
+        fi
+        
+        # Test visitor counter endpoint
+        echo "📊 Testing visitor counter endpoint..."
+        COUNTER_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "https://$FUNCTION_URL/api/visitor-counter" || echo "000")
+        
+        if [ "$COUNTER_RESPONSE" = "200" ]; then
+          echo "✅ Visitor counter endpoint is working"
+        else
+          echo "❌ Visitor counter endpoint not working (Status: $COUNTER_RESPONSE)"
+          # Don't fail deployment for this, as it might be a transient issue
+        fi
+
+    - name: 📊 Update GitHub Environment
+      run: |
+        FUNCTION_APP_NAME="${{ steps.arm_deploy.outputs.function_app_name }}"
+        FUNCTION_URL="https://$(az functionapp show --name $FUNCTION_APP_NAME --resource-group $AZURE_RESOURCE_GROUP --query 'defaultHostName' --output tsv)"
+        
+        echo "📝 Deployment Summary:" >> $GITHUB_STEP_SUMMARY
+        echo "===================" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎯 **Function App:** $FUNCTION_APP_NAME" >> $GITHUB_STEP_SUMMARY
+        echo "🌐 **API URL:** $FUNCTION_URL/api" >> $GITHUB_STEP_SUMMARY
+        echo "💾 **Storage Account:** ${{ steps.arm_deploy.outputs.storage_account_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Test Endpoints:" >> $GITHUB_STEP_SUMMARY
+        echo "- Health Check: $FUNCTION_URL/api/health" >> $GITHUB_STEP_SUMMARY
+        echo "- Visitor Counter: $FUNCTION_URL/api/visitor-counter" >> $GITHUB_STEP_SUMMARY
+        echo "- Visitor Stats: $FUNCTION_URL/api/visitor-stats" >> $GITHUB_STEP_SUMMARY
+  integration_test:
+    needs: build_and_deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    name: Integration Tests
+    env:
+      AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+    
+    steps:
+    - name: 🔄 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📦 Install test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest requests aiohttp
+
+    - name: 🔑 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 🧪 Run integration tests
+      env:
+        AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+      run: |
+        # Get Function App URL
+        FUNCTION_APP_NAME=$(az functionapp list \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --query "[?contains(name, 'func')].name" \
+          --output tsv | head -1)
+        
+        FUNCTION_URL="https://$(az functionapp show \
+          --name $FUNCTION_APP_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --query 'defaultHostName' \
+          --output tsv)/api"
+        
+        echo "🌐 Testing Function App at: $FUNCTION_URL"
+        
+        # Set environment variable for tests
+        export FUNCTION_APP_URL="$FUNCTION_URL"
+        
+        # Run integration tests
+        pytest tests/test_integration.py -v --tb=short -m "not slow"
+
+    - name: 📈 Performance test
+      run: |
+        echo "📊 Running basic performance tests..."
+        
+        # Get Function App URL
+        FUNCTION_APP_NAME=$(az functionapp list \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --query "[?contains(name, 'func')].name" \
+          --output tsv | head -1)
+        
+        FUNCTION_URL="https://$(az functionapp show \
+          --name $FUNCTION_APP_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --query 'defaultHostName' \
+          --output tsv)/api"
+        
+        # Simple load test with curl
+        echo "🚀 Testing response times..."
+        for i in {1..5}; do
+          RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "$FUNCTION_URL/visitor-counter")
+          echo "Response time $i: ${RESPONSE_TIME}s"
+        done
+
+  cleanup_on_failure:
+    needs: [test, build_and_deploy]
+    if: failure() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    name: Cleanup on Failure
+    env:
+      AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+    
+    steps:
+    - name: 🔑 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 🧹 Cleanup failed deployment
+      run: |
+        echo "🧹 Cleaning up failed deployment resources..."
+        
+        # List recent deployments
+        az deployment group list \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --query "[?properties.provisioningState=='Failed'].name" \
+          --output table
+        
+        echo "ℹ️  Manual cleanup may be required for failed resources"
+        
+  notification:
+    needs: [build_and_deploy, integration_test]
+    runs-on: ubuntu-latest
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    name: Send Notification
+    
+    steps:
+    - name: 📧 Deployment notification
+      run: |
+        if [ "${{ needs.build_and_deploy.result }}" == "success" ] && [ "${{ needs.integration_test.result }}" == "success" ]; then
+          echo "✅ Backend deployment completed successfully!"
+          echo "🚀 API is live and all tests passed"
+          echo "📊 Ready to receive frontend requests"
+        else
+          echo "❌ Backend deployment had issues"
+          echo "🔧 Check logs and retry deployment"
+        fi

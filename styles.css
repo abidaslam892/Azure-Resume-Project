@@ -1,0 +1,137 @@
+/* =====================================
+   CSS Enhancements for Abid Aslam CV
+   Cloud Resume Challenge - Azure
+   ===================================== */
+
+/* Additional visitor counter enhancements */
+.visitor-counter {
+  position: relative;
+  overflow: hidden;
+}
+
+.visitor-counter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.visitor-counter:hover::before {
+  left: 100%;
+}
+
+/* Loading animation enhancement */
+.visitor-counter.loading .visitor-number::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-left: 4px;
+  animation: dot-blink 1.5s infinite;
+}
+
+@keyframes dot-blink {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+
+/* Enhanced mobile responsiveness for visitor counter */
+@media (max-width: 880px) {
+  .visitor-counter {
+    margin-top: 8px !important;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .visitor-counter {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.6rem !important;
+    gap: 0.3rem;
+  }
+  
+  .visitor-number {
+    min-width: 1.5rem;
+    padding: 0.1rem 0.3rem !important;
+  }
+}
+
+/* Print styles - hide visitor counter in print */
+@media print {
+  .visitor-counter {
+    display: none !important;
+  }
+}
+
+/* Accessibility improvements */
+.visitor-counter:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .visitor-counter {
+    border: 2px solid;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .visitor-counter,
+  .visitor-number,
+  .visitor-counter::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Dark mode enhancements (already dark, but for completeness) */
+@media (prefers-color-scheme: dark) {
+  .visitor-counter {
+    box-shadow: 0 2px 10px rgba(125, 211, 252, 0.3);
+  }
+}
+
+/* Additional enhancements for the dark theme CV */
+.company-badge {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.company-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(125, 211, 252, 0.1);
+}
+
+.tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(125, 211, 252, 0.2);
+}
+
+.job:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(125, 211, 252, 0.1);
+  border-color: rgba(125, 211, 252, 0.08);
+}
+
+/* Smooth scrolling and performance optimizations */
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  will-change: auto;
+}
+
+.visitor-counter,
+.company-badge,
+.tag,
+.job {
+  will-change: transform;
+}
