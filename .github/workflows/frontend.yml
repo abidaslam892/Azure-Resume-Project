@@ -25,8 +25,8 @@ jobs:
     - name: 🧪 Validate HTML Structure
       run: |
         echo "=== HTML Validation ==="
-        # Check for HTML5 doctype
-        if grep -q "<!DOCTYPE html>" index.html; then
+        # Check for HTML5 doctype (case-insensitive)
+        if grep -qi "<!doctype html>" index.html; then
           echo "✅ HTML5 doctype found"
         else
           echo "❌ HTML5 doctype missing"
