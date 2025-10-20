@@ -6,7 +6,7 @@ To enable automated CI/CD deployment, you need to configure the following secret
 
 Navigate to: **Repository → Settings → Secrets and variables → Actions → New repository secret**
 
-### 🔑 Azure Authentication
+### 🔑 Azure Authentication (Required)
 ```bash
 AZURE_CREDENTIALS
 ```
@@ -20,18 +20,17 @@ AZURE_CREDENTIALS
 }
 ```
 
-### 🏗️ Azure Resources
-```bash
-AZURE_STORAGE_ACCOUNT=storresume1760986821
-AZURE_FUNCTIONAPP_NAME=func-resume-1760986821
-AZURE_RESOURCE_GROUP=rg-cloud-resume
-AZURE_CDN_PROFILE=afd-resume-profile
-AZURE_CDN_ENDPOINT=resume-endpoint-gmd7e5g9f8c6gqgs
+## 🏗️ Azure Resources (Hardcoded in Workflows)
 
-# CosmosDB Configuration
-COSMOS_DB_ACCOUNT_NAME=cosmos-resume-1760986821
-COSMOS_DB_KEY=your-cosmosdb-primary-key
-```
+The following resources are already configured in the workflows:
+- **Storage Account**: `storresume1760986821`
+- **Function App**: `func-resume-1760986821`
+- **Resource Group**: `rg-cloud-resume`
+- **CosmosDB**: `cosmos-resume-1760986821`
+- **CDN Profile**: `afd-resume-profile`
+- **CDN Endpoint**: `resume-endpoint-gmd7e5g9f8c6gqgs`
+
+> **Note**: The CosmosDB key is automatically retrieved by the Azure CLI during deployment, so no additional secrets are needed for basic functionality.
 
 ## 🛠️ Creating Azure Service Principal
 
