@@ -104,34 +104,65 @@ jobs:
         echo "SUCCESS: Deployment package created"
         ls -la function-deploy.zip
 
+    - name: Azure Login (Fallback Authentication)
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      continue-on-error: true
+
     - name: Deploy to Azure Functions
       env:
         AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
       run: |
         cd backend/api
         
-        # Verify publish profile is available
-        if [ -z "$AZURE_FUNCTIONAPP_PUBLISH_PROFILE" ]; then
-          echo "ERROR: AZURE_FUNCTIONAPP_PUBLISH_PROFILE secret not configured"
-          exit 1
+        echo "📦 Deploying to Azure Functions..."
+        
+        # Check if publish profile is available
+        if [ -n "$AZURE_FUNCTIONAPP_PUBLISH_PROFILE" ]; then
+          echo "✅ Using publish profile deployment method..."
+          
+          # Save publish profile to temporary file
+          echo "$AZURE_FUNCTIONAPP_PUBLISH_PROFILE" > publish-profile.xml
+          
+          # Install Azure Functions Core Tools if not available
+          if ! command -v func &> /dev/null; then
+            echo "Installing Azure Functions Core Tools..."
+            npm install -g azure-functions-core-tools@4 --unsafe-perm true
+          fi
+          
+          # Deploy using Azure Functions Core Tools
+          func azure functionapp publish func-resume-1760986821 --publish-profile publish-profile.xml --python
+          
+          # Clean up
+          rm -f publish-profile.xml
+          
+        else
+          echo "⚠️ Publish profile not available, using Azure CLI deployment..."
+          
+          # Create deployment package
+          echo "Creating deployment package..."
+          mkdir -p deploy
+          cp function_app.py deploy/
+          cp requirements.txt deploy/
+          
+          # Create basic host.json
+          echo '{"version":"2.0","functionTimeout":"00:05:00","extensionBundle":{"id":"Microsoft.Azure.Functions.ExtensionBundle","version":"[3.*,4.0.0)"}}' > deploy/host.json
+          
+          # Create zip package
+          cd deploy
+          zip -r ../function-deploy.zip .
+          cd ..
+          
+          # Deploy using Azure CLI
+          az functionapp deployment source config-zip \
+            --resource-group rg-cloud-resume \
+            --name func-resume-1760986821 \
+            --src function-deploy.zip
+          
+          # Clean up
+          rm -rf deploy function-deploy.zip
         fi
-        
-        echo "📦 Deploying to Azure Functions using publish profile..."
-        
-        # Save publish profile to temporary file
-        echo "$AZURE_FUNCTIONAPP_PUBLISH_PROFILE" > publish-profile.xml
-        
-        # Install Azure Functions Core Tools if not available
-        if ! command -v func &> /dev/null; then
-          echo "Installing Azure Functions Core Tools..."
-          npm install -g azure-functions-core-tools@4 --unsafe-perm true
-        fi
-        
-        # Deploy using Azure Functions Core Tools
-        func azure functionapp publish func-resume-1760986821 --publish-profile publish-profile.xml --python
-        
-        # Clean up
-        rm -f publish-profile.xml
         
         echo "✅ Backend deployment completed successfully"
 
