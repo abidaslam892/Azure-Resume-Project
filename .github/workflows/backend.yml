@@ -105,15 +105,39 @@ jobs:
         ls -la function-deploy.zip
 
     - name: Deploy to Azure Functions
-      uses: azure/functions-action@v1
-      with:
-        app-name: func-cloud-resume-backend
-        package: backend/api/function-deploy.zip
-        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+      env:
+        AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+      run: |
+        cd backend/api
+        
+        # Verify publish profile is available
+        if [ -z "$AZURE_FUNCTIONAPP_PUBLISH_PROFILE" ]; then
+          echo "ERROR: AZURE_FUNCTIONAPP_PUBLISH_PROFILE secret not configured"
+          exit 1
+        fi
+        
+        echo "📦 Deploying to Azure Functions using publish profile..."
+        
+        # Save publish profile to temporary file
+        echo "$AZURE_FUNCTIONAPP_PUBLISH_PROFILE" > publish-profile.xml
+        
+        # Install Azure Functions Core Tools if not available
+        if ! command -v func &> /dev/null; then
+          echo "Installing Azure Functions Core Tools..."
+          npm install -g azure-functions-core-tools@4 --unsafe-perm true
+        fi
+        
+        # Deploy using Azure Functions Core Tools
+        func azure functionapp publish func-resume-1760986821 --publish-profile publish-profile.xml --python
+        
+        # Clean up
+        rm -f publish-profile.xml
+        
+        echo "✅ Backend deployment completed successfully"
 
     - name: Deployment Status
       run: |
         echo "SUCCESS: Backend deployed to Azure Functions"
-        echo "INFO: Function App: func-cloud-resume-backend"
-        echo "INFO: API URL: https://func-cloud-resume-backend.azurewebsites.net/api/get-visitor-count"
-        echo "INFO: Health Check: https://func-cloud-resume-backend.azurewebsites.net/api/health"
+        echo "INFO: Function App: func-resume-1760986821"
+        echo "INFO: API URL: https://func-resume-1760986821.azurewebsites.net/api/get-visitor-count"
+        echo "INFO: Health Check: https://func-resume-1760986821.azurewebsites.net/api/health"
