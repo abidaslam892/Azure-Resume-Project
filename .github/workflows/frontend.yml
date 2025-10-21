@@ -68,16 +68,6 @@ jobs:
             --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
             --overwrite
           
-          # Upload CSS file
-          az storage blob upload \
-            --account-name storresume1760986821 \
-            --container-name '$web' \
-            --name styles.css \
-            --file styles.css \
-            --content-type 'text/css' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
-          
           # Upload JavaScript file
           az storage blob upload \
             --account-name storresume1760986821 \
@@ -88,21 +78,43 @@ jobs:
             --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
             --overwrite
           
-          # Upload images if they exist
-          if [ -d "images" ]; then
-            for file in images/*; do
-              if [ -f "$file" ]; then
-                filename=$(basename "$file")
-                az storage blob upload \
-                  --account-name storresume1760986821 \
-                  --container-name '$web' \
-                  --name "images/$filename" \
-                  --file "$file" \
-                  --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-                  --overwrite
-              fi
-            done
-          fi
+          # Upload CSS files
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name styles.css \
+            --file styles.css \
+            --content-type 'text/css' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
+            
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name visitor-counter-styles.css \
+            --file visitor-counter-styles.css \
+            --content-type 'text/css' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
+          
+          # Upload images
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name images/Screenshot_1.png \
+            --file images/Screenshot_1.png \
+            --content-type 'image/png' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
+            
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name images/image.jpg \
+            --file images/image.jpg \
+            --content-type 'image/jpeg' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
           
           echo "✅ Frontend deployed successfully to Azure Storage"
 

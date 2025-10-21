@@ -7,21 +7,90 @@
 
 A complete implementation of the [Cloud Resume Challenge](https://cloudresumechallenge.dev/docs/the-challenge/azure/) using Azure services with modern CI/CD practices.
 
-## 🏗️ Architecture
+## 🏗️ Complete Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Custom Domain │    │  Azure Front Door │    │ Azure Storage   │
-│ abidaslam.online├────┤      (CDN)       ├────┤   Static Web    │
-│                 │    │                  │    │   Hosting       │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │
-                                │
-                       ┌────────▼────────┐    ┌─────────────────┐
-                       │ Azure Functions │    │ Azure Storage   │
-                       │   (Python 3.11) ├────┤     Tables      │
-                       │   Visitor API   │    │  (Database)     │
-                       └─────────────────┘    └─────────────────┘
+                    🌐 Internet Traffic
+                           │
+                           ▼
+   ┌─────────────────────────────────────────────────────┐
+   │                Azure Front Door                     │
+   │   🔒 SSL/TLS    🌍 Global CDN    ⚡ Load Balancing  │
+   │   • Custom Domain: abidaslam.online                 │
+   │   • Auto SSL Certificate                            │
+   │   • DDoS Protection                                 │
+   └─────────────────┬───────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        │                         │
+        ▼                         ▼
+┏━━━━━━━━━━━━━━━━━━━┓         ┏━━━━━━━━━━━━━━━━━━━┓
+┃   FRONTEND       ┃         ┃    BACKEND       ┃
+┃                  ┃         ┃                  ┃
+┃ Azure Storage    ┃         ┃ Azure Functions  ┃
+┃ Static Websites  ┃         ┃ (Python 3.11)   ┃
+┃                  ┃         ┃                  ┃
+┃ • index.html     ┃    ────▶┃ • GET /health    ┃
+┃ • script.js      ┃ API Call┃ • POST /get-     ┃
+┃ • styles.css     ┃ (CORS)  ┃   visitor-count  ┃
+┃ • images/        ┃         ┃                  ┃
+┗━━━━━━━━━━━━━━━━━━━┛         ┗━━━━━━━━━━━━━━━━━━━┛
+                                      │
+                                      │ Persists Data
+                                      ▼
+                        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+                        ┃   STORAGE LAYER     ┃
+                        ┃                     ┃
+                        ┃ Azure Storage Tables┃
+                        ┃                     ┃
+                        ┃ Table: VisitorCount ┃
+                        ┃ PartitionKey: "main"┃
+                        ┃ RowKey: "counter"   ┃
+                        ┃ Count: [INTEGER]    ┃
+                        ┗━━━━━━━━━━━━━━━━━━━━━━━┛
+
+╔══════════════════════════════════════════════════════════════╗
+║                      CI/CD PIPELINE                          ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  GitHub Repository                                           ║
+║  │                                                           ║
+║  ├── .github/workflows/                                      ║
+║  │   ├── frontend.yml  ──────────▶ Azure Storage Deploy     ║
+║  │   └── backend.yml   ──────────▶ Azure Functions Deploy  ║
+║  │                                                           ║
+║  ├── Triggers on:                                           ║
+║  │   • Push to main/master                                  ║
+║  │   • Manual workflow_dispatch                             ║
+║  │                                                           ║
+║  └── Secrets Used:                                          ║
+║      • AZURE_STORAGE_CONNECTION_STRING                      ║
+║      • AZURE_FUNCTIONAPP_PUBLISH_PROFILE                    ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+## 🔄 Data Flow
+
+```
+┌─────────────┐    1. Page Load    ┌─────────────────┐
+│   Browser   ├──────────────────▶│  Static Website │
+│             │◀──────────────────┤  (Azure Storage)│
+└─────────────┘   2. HTML/CSS/JS   └─────────────────┘
+       │
+       │ 3. JavaScript API Call
+       │    fetch('/api/get-visitor-count')
+       ▼
+┌─────────────┐    4. HTTP POST    ┌─────────────────┐
+│  JavaScript ├──────────────────▶│ Azure Functions │
+│             │◀──────────────────┤   (Python API)  │
+└─────────────┘   5. JSON Response └─────────────────┘
+                     {"count": 1234}        │
+                                            │ 6. Read/Write
+                                            ▼
+                                  ┌─────────────────┐
+                                  │ Storage Tables  │
+                                  │ Counter: 1234   │
+                                  └─────────────────┘
 ```
 
 ## ✨ Features
@@ -114,41 +183,134 @@ func azure functionapp publish func-resume-1760986821
 ### Visitor Counter
 ```bash
 # Get current count
-GET https://func-resume-1760986821.azurewebsites.net/api/visitor-counter
+GET https://func-cloud-resume-backend.azurewebsites.net/api/get-visitor-count
 
-# Increment count (new visitor)
-POST https://func-resume-1760986821.azurewebsites.net/api/visitor-counter
-```
-
-### Health Check
-```bash
-GET https://func-resume-1760986821.azurewebsites.net/api/health
+# Health check
+GET https://func-cloud-resume-backend.azurewebsites.net/api/health
 ```
 
 ### Response Format
 ```json
 {
   "success": true,
-  "count": 42,
+  "count": 1337,
   "method": "POST",
-  "timestamp": "2025-10-21T18:30:00.000Z",
+  "timestamp": "2025-10-22T12:00:00.000Z",
   "message": "Visitor count incremented successfully",
   "source": "Azure Storage Tables"
 }
 ```
 
-## 🔧 Configuration
+## � CI/CD Pipeline Details
+
+### Frontend Workflow (`.github/workflows/frontend.yml`)
+```yaml
+Triggers:
+  - Push to main/master (when HTML/CSS/JS files change)
+  - Manual dispatch
+
+Steps:
+  1. 🧪 Validate HTML structure and responsive meta tags
+  2. 🔍 Check for required elements (visitor-count)
+  3. 📤 Deploy to Azure Storage using connection string
+  4. 📁 Upload: index.html, script.js, styles.css, images/
+  5. ✅ Set proper MIME types for each file
+```
+
+### Backend Workflow (`.github/workflows/backend.yml`)
+```yaml
+Triggers:
+  - Push to main/master (when backend/ files change)
+  - Manual dispatch
+
+Steps:
+  1. 🧪 Validate project structure and required files
+  2. 🐍 Setup Python 3.11 and install dependencies
+  3. 🔍 Validate code syntax and required imports
+  4. 📦 Create deployment package with essential files
+  5. 🚀 Deploy to Azure Functions using publish profile
+  6. ✅ Verify deployment success
+```
+
+### Required GitHub Secrets
+```bash
+# Azure Storage Connection String
+AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;..."
+
+# Azure Functions Publish Profile (XML)
+AZURE_FUNCTIONAPP_PUBLISH_PROFILE="<publishProfile>...</publishProfile>"
+```
+
+## �🔧 Configuration
 
 ### Azure Resources
 - **Storage Account**: `storresume1760986821`
-- **Function App**: `func-resume-1760986821`
+- **Function App**: `func-cloud-resume-backend`
 - **Resource Group**: `rg-cloud-resume`
-- **Front Door**: `afd-resume-profile`
+- **Front Door**: `resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net`
 
 ### DNS Configuration
 - **Primary Domain**: `www.abidaslam.online` (CNAME → Azure Front Door)
 - **Root Domain**: `abidaslam.online` (Forwards to www)
 - **Validation**: `_dnsauth.abidaslam.online` (TXT record for Azure)
+
+## 🔍 Troubleshooting CI/CD Issues
+
+### Common Frontend Deployment Errors
+
+#### ❌ "az cli script failed"
+```bash
+# Check file existence before upload
+if [ -f "styles.css" ]; then
+  az storage blob upload ...
+fi
+```
+
+#### ❌ "Connection string invalid"
+```bash
+# Verify GitHub secret format:
+AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;..."
+```
+
+#### ❌ "Container '$web' not found"
+```bash
+# Enable static website hosting on storage account
+az storage blob service-properties update \
+  --account-name storresume1760986821 \
+  --static-website \
+  --index-document index.html
+```
+
+### Common Backend Deployment Errors
+
+#### ❌ "Function app not found"
+```bash
+# Verify function app name in workflow:
+app-name: func-cloud-resume-backend  # Correct name
+```
+
+#### ❌ "Publish profile invalid"
+```bash
+# Get new publish profile:
+az functionapp deployment list-publishing-profiles \
+  --name func-cloud-resume-backend \
+  --resource-group rg-cloud-resume \
+  --xml
+```
+
+#### ❌ "Python dependencies failed"
+```bash
+# Check requirements.txt format:
+azure-functions==1.18.0
+azure-data-tables==12.4.0
+```
+
+### Debugging Steps
+1. **Check GitHub Actions logs** for detailed error messages
+2. **Verify Azure resource names** match workflow configuration
+3. **Test API endpoints manually** before deploying
+4. **Validate file paths** in upload commands
+5. **Check Azure portal** for function app logs
 
 ## 📊 Monitoring
 
