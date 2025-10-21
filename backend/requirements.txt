@@ -1,0 +1,15 @@
+# Azure Functions Python Requirements
+# Cloud Resume Challenge - Backend Dependencies
+
+# Azure Functions Core
+azure-functions>=1.18.0
+
+# Azure SDK for Python - Essential only
+azure-data-tables>=12.4.0
+azure-identity>=1.15.0
+
+# HTTP and JSON handling
+requests>=2.31.0
+
+# Date and time utilities
+python-dateutil>=2.8.2

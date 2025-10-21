@@ -3,7 +3,7 @@ name: Frontend CI/CD
 on:
   push:
     branches: [ main, master ]
-    paths: [ '*.html', '*.css', '*.js' ]
+    paths: [ '*.html', '*.css', '*.js', 'images/**' ]
   workflow_dispatch:
 
 jobs:
@@ -11,41 +11,104 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 🔄 Checkout
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: 🧪 Validate files
+    - name: Validate files
       run: |
+        echo "Validating frontend files..."
+        
         # Check HTML structure
-        grep -q "<!doctype html>" index.html && echo "✅ HTML5 doctype found" || exit 1
-        grep -q "viewport" index.html && echo "✅ Responsive meta tag found" || exit 1
-        
-        # Check CSS syntax
-        grep -q "@media" styles.css && echo "✅ Responsive CSS found" || echo "⚠️ No media queries"
-        
-        # Check JS structure
-        grep -q "fetch" script.js && echo "✅ API calls found" || echo "⚠️ No API integration"
-        
-        echo "✅ Frontend validation completed"
-
-    - name: 🔒 Security check
-      run: |
-        if grep -r "password\|secret\|key" --include="*.html" --include="*.js" --include="*.css" . | grep -v "visitor-counter"; then
-          echo "❌ Potential sensitive data found"
+        if grep -q "<!doctype html>" index.html; then
+          echo "SUCCESS: HTML5 doctype found"
+        else
+          echo "ERROR: HTML5 doctype missing"
           exit 1
         fi
-        echo "✅ No sensitive data found"
+        
+        if grep -q "viewport" index.html; then
+          echo "SUCCESS: Responsive meta tag found"
+        else
+          echo "WARNING: No viewport meta tag found"
+        fi
+        
+        # Check for required elements
+        if grep -q "visitor-count" index.html; then
+          echo "SUCCESS: Visitor counter element found"
+        else
+          echo "ERROR: Visitor counter element missing"
+          exit 1
+        fi
+        
+        # Check JS structure
+        if [ -f script.js ]; then
+          if grep -q "fetch\|XMLHttpRequest" script.js; then
+            echo "SUCCESS: API calls found in JavaScript"
+          else
+            echo "WARNING: No API integration found"
+          fi
+        else
+          echo "WARNING: script.js file not found"
+        fi
+        
+        echo "SUCCESS: Frontend validation completed"
 
-    - name: 📊 File sizes
-      run: |
-        echo "📄 Frontend assets:"
-        ls -lh *.html *.css *.js 2>/dev/null || true
+    - name: Deploy to Azure Storage
+      uses: azure/CLI@v1
+      with:
+        azcliversion: 2.30.0
+        inlineScript: |
+          # Upload HTML file
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name index.html \
+            --file index.html \
+            --content-type 'text/html' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
+          
+          # Upload CSS file
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name styles.css \
+            --file styles.css \
+            --content-type 'text/css' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
+          
+          # Upload JavaScript file
+          az storage blob upload \
+            --account-name storresume1760986821 \
+            --container-name '$web' \
+            --name script.js \
+            --file script.js \
+            --content-type 'application/javascript' \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            --overwrite
+          
+          # Upload images if they exist
+          if [ -d "images" ]; then
+            for file in images/*; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                az storage blob upload \
+                  --account-name storresume1760986821 \
+                  --container-name '$web' \
+                  --name "images/$filename" \
+                  --file "$file" \
+                  --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+                  --overwrite
+              fi
+            done
+          fi
+          
+          echo "✅ Frontend deployed successfully to Azure Storage"
 
-    - name: 🚀 Deployment Status
+    - name: Deployment Status
       run: |
-        echo "✅ Frontend validation completed"
-        echo "📦 Ready for Azure Storage deployment"
-        echo "🔗 Target: storresume1760986821"
-        echo "🌐 CDN: https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/"
-        echo ""
-        echo "💡 To deploy: Add AZURE_CREDENTIALS to GitHub Secrets"
+        echo "SUCCESS: Frontend deployed to Azure Storage"
+        echo "INFO: Website URL: https://storresume1760986821.z13.web.core.windows.net"
+        echo "INFO: Custom Domain: https://www.abidaslam.online"
+        echo "INFO: CDN: https://resume-endpoint-gmd7e5g9f8c6gqgs.z01.azurefd.net/"

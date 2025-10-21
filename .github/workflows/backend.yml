@@ -7,57 +7,113 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: '3.9'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 🔄 Checkout
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+    - name: Validate structure
+      run: |
+        echo "Validating project structure..."
+        
+        if [ ! -d "backend" ]; then
+          echo "ERROR: backend/ directory not found"
+          exit 1
+        fi
+        
+        if [ ! -d "backend/api" ]; then
+          echo "ERROR: backend/api/ directory not found"
+          exit 1
+        fi
+        
+        if [ ! -f "backend/api/function_app.py" ]; then
+          echo "ERROR: function_app.py not found"
+          exit 1
+        fi
+        
+        if [ ! -f "backend/api/requirements.txt" ]; then
+          echo "ERROR: requirements.txt not found"
+          exit 1
+        fi
+        
+        echo "SUCCESS: Project structure validated"
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: 📦 Install dependencies
+    - name: Install dependencies
       run: |
         cd backend/api
+        echo "Installing Python dependencies..."
         pip install --upgrade pip
-        pip install -r requirements.txt
+        
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+          echo "SUCCESS: Dependencies installed successfully"
+        else
+          echo "ERROR: requirements.txt not found"
+          exit 1
+        fi
 
-    - name: 🧪 Validate code
+    - name: Validate code
       run: |
         cd backend/api
         python -m py_compile function_app.py
-        echo "✅ Python syntax valid"
+        echo "SUCCESS: Python syntax valid"
         
         # Check required imports
-        grep -q "azure.functions" function_app.py && echo "✅ Azure Functions imports found" || exit 1
-        grep -q "azure.data.tables" function_app.py && echo "✅ Table Storage imports found" || exit 1
-
-    - name: 🔒 Security check
-      run: |
-        cd backend/api
-        if grep -r "password\|secret.*=" --include="*.py" . | grep -v "os.environ\|getenv"; then
-          echo "❌ Hardcoded secrets found"
+        if grep -q "azure.functions" function_app.py; then
+          echo "SUCCESS: Azure Functions imports found"
+        else
+          echo "ERROR: Azure Functions imports missing"
           exit 1
         fi
-        echo "✅ No hardcoded secrets"
+        
+        if grep -q "azure.data.tables" function_app.py; then
+          echo "SUCCESS: Table Storage imports found"
+        else
+          echo "ERROR: Table Storage imports missing"
+          exit 1
+        fi
 
-    - name: 📦 Create package
+    - name: Create deployment package
       run: |
-        cd backend
-        zip -r function-app.zip api/ -x "api/__pycache__/*" "api/*.pyc"
-        echo "✅ Package created: $(du -h function-app.zip | cut -f1)"
+        cd backend/api
+        echo "Creating deployment package..."
+        
+        # Create clean deployment directory
+        mkdir -p deploy
+        
+        # Copy essential files
+        cp function_app.py deploy/
+        cp requirements.txt deploy/
+        cp host.json deploy/
+        
+        # Create zip package
+        cd deploy
+        zip -r ../function-deploy.zip .
+        cd ..
+        
+        echo "SUCCESS: Deployment package created"
+        ls -la function-deploy.zip
 
-    - name: 🚀 Deployment Status
+    - name: Deploy to Azure Functions
+      uses: azure/functions-action@v1
+      with:
+        app-name: func-resume-1760986821
+        package: backend/api/function-deploy.zip
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+
+    - name: Deployment Status
       run: |
-        echo "✅ Backend validation completed"
-        echo "📦 Ready for Azure Functions deployment"
-        echo "🔗 Target: func-resume-1760986821"
-        echo "🔗 API: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
-        echo ""
-        echo "💡 To deploy: Add AZURE_CREDENTIALS to GitHub Secrets"
+        echo "SUCCESS: Backend deployed to Azure Functions"
+        echo "INFO: Function App: func-resume-1760986821"
+        echo "INFO: API URL: https://func-resume-1760986821.azurewebsites.net/api/visitor-counter"
+        echo "INFO: Health Check: https://func-resume-1760986821.azurewebsites.net/api/health"

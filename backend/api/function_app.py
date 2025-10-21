@@ -4,8 +4,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from azure.data.tables import TableServiceClient, TableEntity
-from azure.core.exceptions import ResourceNotFoundError, ServiceRequestError
-import uuid
+from azure.core.exceptions import ResourceNotFoundError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,186 +13,92 @@ logger = logging.getLogger(__name__)
 # Initialize the Azure Function App
 app = func.FunctionApp()
 
-class TableStorageManager:
-    """
-    Manages Azure Table Storage operations for visitor counter
-    """
-    
-    def __init__(self):
-        """Initialize Table Storage client and configure table"""
+def get_table_client():
+    """Initialize and return table client for Azure Storage Tables"""
+    try:
+        # Use AzureWebJobsStorage which contains the storage account connection
+        connection_string = os.environ.get('AzureWebJobsStorage')
+        
+        if not connection_string:
+            raise ValueError("AzureWebJobsStorage connection string not found")
+        
+        # Create table service client
+        table_service = TableServiceClient.from_connection_string(connection_string)
+        table_name = "VisitorCounter"
+        
+        # Get table client and create table if it doesn't exist
+        table_client = table_service.get_table_client(table_name)
+        
         try:
-            # Get connection details from environment variables
-            self.account_name = os.environ.get('COSMOS_DB_ACCOUNT_NAME', 'cosmos-resume-1760986821')
-            self.account_key = os.environ.get('COSMOS_DB_KEY')
-            self.table_name = os.environ.get('COSMOS_DB_TABLE', 'VisitorCounter')
-            
-            if not self.account_key:
-                raise ValueError("CosmosDB account key not found in environment variables")
-            
-            # Create Table Service Client
-            account_url = f"https://{self.account_name}.table.cosmos.azure.com/"
-            self.table_service_client = TableServiceClient(
-                endpoint=account_url,
-                credential=self.account_key
-            )
-            
-            # Get table client
-            self.table_client = self.table_service_client.get_table_client(
-                table_name=self.table_name
-            )
-            
-            logger.info("Table Storage client initialized successfully")
-            
+            table_client.create_table()
+            logger.info(f"📊 Table {table_name} created or already exists")
         except Exception as e:
-            logger.error(f"Failed to initialize Table Storage client: {str(e)}")
-            raise
+            logger.info(f"📊 Table {table_name} already exists: {str(e)}")
+        
+        logger.info("✅ Table client initialized successfully")
+        return table_client
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize table client: {str(e)}")
+        raise
 
-    def get_visitor_count(self):
-        """
-        Retrieve current visitor count from Table Storage
-        """
+def get_visitor_count():
+    """Get current visitor count from Azure Storage Table"""
+    try:
+        client = get_table_client()
+        entity = client.get_entity(partition_key="visitor", row_key="counter")
+        count = entity.get('Count', 0)
+        logger.info(f"📊 Retrieved visitor count: {count}")
+        return count
+    except ResourceNotFoundError:
+        logger.info("📊 No existing counter found, initializing to 0")
+        # Initialize the counter
         try:
-            # Query for the visitor counter entity
-            entity = self.table_client.get_entity(
-                partition_key="visitor-counter",
-                row_key="count"
-            )
-            
-            count = entity.get('Count', 0)
-            logger.info(f"Retrieved visitor count: {count}")
-            return count
-            
-        except ResourceNotFoundError:
-            logger.info("Visitor counter not found, initializing...")
-            return self.initialize_counter()
+            client = get_table_client()
+            entity = TableEntity()
+            entity['PartitionKey'] = "visitor"
+            entity['RowKey'] = "counter"
+            entity['Count'] = 0
+            entity['LastUpdated'] = datetime.now(timezone.utc)
+            client.create_entity(entity)
+            logger.info("📊 Counter initialized to 0")
         except Exception as e:
-            logger.error(f"Error retrieving visitor count: {str(e)}")
-            # Return 0 instead of raising error for better UX
-            return 0
+            logger.info(f"📊 Counter may already exist: {e}")
+        return 0
+    except Exception as e:
+        logger.error(f"❌ Error getting visitor count: {str(e)}")
+        return 0
 
-    def increment_visitor_count(self):
-        """
-        Increment and return the visitor count
-        """
-        try:
-            # Try to get existing counter
-            try:
-                entity = self.table_client.get_entity(
-                    partition_key="visitor-counter",
-                    row_key="count"
-                )
-                current_count = entity.get('Count', 0)
-                etag = entity.metadata['etag']
-            except ResourceNotFoundError:
-                # Counter doesn't exist, start with 0
-                current_count = 0
-                etag = None
-            
-            # Increment the count
-            new_count = current_count + 1
-            
-            # Create or update the counter entity
-            counter_entity = TableEntity()
-            counter_entity['PartitionKey'] = "visitor-counter"
-            counter_entity['RowKey'] = "count"
-            counter_entity['Count'] = new_count
-            counter_entity['LastUpdated'] = datetime.now(timezone.utc)
-            counter_entity['Version'] = str(uuid.uuid4())
-            
-            if etag:
-                # Update existing entity
-                self.table_client.update_entity(
-                    entity=counter_entity,
-                    mode="replace"
-                )
-            else:
-                # Create new entity
-                self.table_client.create_entity(entity=counter_entity)
-            
-            logger.info(f"Visitor count incremented to: {new_count}")
-            return new_count
-            
-        except Exception as e:
-            logger.error(f"Error incrementing visitor count: {str(e)}")
-            # Return current count + 1 as fallback
-            current = self.get_visitor_count()
-            return current + 1
-
-    def initialize_counter(self):
-        """
-        Initialize the visitor counter with count 1
-        """
-        try:
-            counter_entity = TableEntity()
-            counter_entity['PartitionKey'] = "visitor-counter"
-            counter_entity['RowKey'] = "count"
-            counter_entity['Count'] = 1
-            counter_entity['LastUpdated'] = datetime.now(timezone.utc)
-            counter_entity['Version'] = str(uuid.uuid4())
-            counter_entity['CreatedAt'] = datetime.now(timezone.utc)
-            
-            self.table_client.create_entity(entity=counter_entity)
-            logger.info("Visitor counter initialized with count: 1")
-            return 1
-            
-        except Exception as e:
-            logger.error(f"Error initializing visitor counter: {str(e)}")
-            return 1
-
-    def get_visitor_stats(self):
-        """
-        Get comprehensive visitor statistics
-        """
-        try:
-            entity = self.table_client.get_entity(
-                partition_key="visitor-counter",
-                row_key="count"
-            )
-            
-            return {
-                'count': entity.get('Count', 0),
-                'lastUpdated': entity.get('LastUpdated', '').isoformat() if entity.get('LastUpdated') else None,
-                'createdAt': entity.get('CreatedAt', '').isoformat() if entity.get('CreatedAt') else None,
-                'version': entity.get('Version', ''),
-            }
-            
-        except ResourceNotFoundError:
-            return {
-                'count': 0,
-                'lastUpdated': None,
-                'createdAt': None,
-                'version': '',
-            }
-        except Exception as e:
-            logger.error(f"Error getting visitor stats: {str(e)}")
-            return {
-                'count': 0,
-                'lastUpdated': None,
-                'createdAt': None,
-                'version': '',
-                'error': str(e)
-            }
-
-# Initialize Table Storage Manager
-table_manager = None
-
-def get_table_manager():
-    """
-    Get or create table manager instance
-    """
-    global table_manager
-    if table_manager is None:
-        table_manager = TableStorageManager()
-    return table_manager
+def increment_visitor_count():
+    """Increment visitor count in Azure Storage Table"""
+    try:
+        client = get_table_client()
+        
+        # Get current count
+        current_count = get_visitor_count()
+        new_count = current_count + 1
+        
+        # Create or update entity
+        entity = TableEntity()
+        entity['PartitionKey'] = "visitor"
+        entity['RowKey'] = "counter"
+        entity['Count'] = new_count
+        entity['LastUpdated'] = datetime.now(timezone.utc)
+        
+        # Upsert the entity (create or replace)
+        client.upsert_entity(entity, mode="replace")
+        
+        logger.info(f"📈 Visitor count incremented to: {new_count}")
+        return new_count
+        
+    except Exception as e:
+        logger.error(f"❌ Error incrementing visitor count: {str(e)}")
+        return 0
 
 @app.route(route="visitor-counter", methods=["GET", "POST", "OPTIONS"], auth_level=func.AuthLevel.ANONYMOUS)
 def visitor_counter(req: func.HttpRequest) -> func.HttpResponse:
     """
-    Azure Function HTTP trigger for visitor counter
-    
-    GET: Returns current visitor count
-    POST: Increments and returns visitor count
-    OPTIONS: CORS preflight support
+    Azure Function HTTP trigger for visitor counter with Azure Storage Tables
     """
     
     try:
@@ -210,50 +115,29 @@ def visitor_counter(req: func.HttpRequest) -> func.HttpResponse:
                 }
             )
         
-        logger.info(f"Visitor counter function triggered via {req.method}")
+        logger.info(f"🚀 Visitor counter triggered via {req.method}")
         
-        # Get table manager
-        manager = get_table_manager()
-        
-        if req.method == "GET":
-            # Return current count without incrementing
-            count = manager.get_visitor_count()
-            
-            response_data = {
-                "success": True,
-                "count": count,
-                "method": "GET",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "message": "Current visitor count retrieved"
-            }
-            
-        elif req.method == "POST":
+        if req.method == "POST":
             # Increment and return new count
-            count = manager.increment_visitor_count()
-            
-            response_data = {
-                "success": True,
-                "count": count,
-                "method": "POST",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "message": "Visitor count incremented"
-            }
-            
+            count = increment_visitor_count()
+            message = "Visitor count incremented successfully"
+            logger.info(f"📈 POST request - count incremented to: {count}")
         else:
-            return func.HttpResponse(
-                json.dumps({
-                    "success": False,
-                    "error": f"Method {req.method} not allowed",
-                    "allowedMethods": ["GET", "POST", "OPTIONS"]
-                }),
-                status_code=405,
-                headers={
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                }
-            )
+            # GET - return current count without incrementing
+            count = get_visitor_count()
+            message = "Current visitor count retrieved"
+            logger.info(f"📊 GET request - current count: {count}")
         
-        logger.info(f"Visitor counter response: {response_data}")
+        response_data = {
+            "success": True,
+            "count": count,
+            "method": req.method,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "message": message,
+            "source": "Azure Storage Tables"
+        }
+        
+        logger.info(f"✅ Returning response: count={count}, method={req.method}")
         
         return func.HttpResponse(
             json.dumps(response_data),
@@ -268,59 +152,18 @@ def visitor_counter(req: func.HttpRequest) -> func.HttpResponse:
         )
         
     except Exception as e:
-        logger.error(f"Error in visitor counter function: {str(e)}")
+        logger.error(f"❌ Error in visitor counter function: {str(e)}")
         
         error_response = {
             "success": False,
             "error": "Internal server error",
-            "message": "Failed to process visitor counter request",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "message": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "Azure Storage Tables"
         }
         
         return func.HttpResponse(
             json.dumps(error_response),
-            status_code=500,
-            headers={
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            }
-        )
-
-@app.route(route="visitor-stats", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
-def visitor_stats(req: func.HttpRequest) -> func.HttpResponse:
-    """
-    Get detailed visitor statistics
-    """
-    try:
-        logger.info("Visitor stats function triggered")
-        
-        manager = get_table_manager()
-        stats = manager.get_visitor_stats()
-        
-        response_data = {
-            "success": True,
-            "stats": stats,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        
-        return func.HttpResponse(
-            json.dumps(response_data),
-            status_code=200,
-            headers={
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Error in visitor stats function: {str(e)}")
-        
-        return func.HttpResponse(
-            json.dumps({
-                "success": False,
-                "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }),
             status_code=500,
             headers={
                 "Content-Type": "application/json",
@@ -334,17 +177,21 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
     Health check endpoint
     """
     try:
+        logger.info("🏥 Health check requested")
+        
         # Test table connection
-        manager = get_table_manager()
+        count = get_visitor_count()
         
         health_data = {
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0.0",
+            "version": "2.0.0",
+            "runtime": "Python 3.11",
             "services": {
-                "table_storage": "connected",
+                "azure_storage_tables": "connected",
                 "function_app": "running"
-            }
+            },
+            "current_count": count
         }
         
         return func.HttpResponse(
@@ -357,17 +204,18 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
         )
         
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
+        logger.error(f"❌ Health check failed: {str(e)}")
         
         return func.HttpResponse(
             json.dumps({
                 "status": "unhealthy",
                 "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "runtime": "Python 3.11"
             }),
             status_code=503,
             headers={
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*",
             }
-        )# Deployment test Tue Oct 21 01:40:04 AM PKT 2025
+        )

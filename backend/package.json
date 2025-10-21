@@ -1,0 +1,12 @@
+{
+  "name": "azure-resume-visitor-counter",
+  "version": "1.0.0",
+  "description": "JavaScript Azure Function for visitor counter with CosmosDB Table API",
+  "main": "visitor-counter/index.js",
+  "dependencies": {
+    "@azure/data-tables": "^13.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
