@@ -65,8 +65,7 @@ jobs:
             --name index.html \
             --file index.html \
             --content-type 'text/html' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
           
           # Upload JavaScript file
           az storage blob upload \
@@ -75,8 +74,7 @@ jobs:
             --name script.js \
             --file script.js \
             --content-type 'application/javascript' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
           
           # Upload CSS files
           az storage blob upload \
@@ -85,8 +83,7 @@ jobs:
             --name styles.css \
             --file styles.css \
             --content-type 'text/css' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
             
           az storage blob upload \
             --account-name storresume1760986821 \
@@ -94,8 +91,7 @@ jobs:
             --name visitor-counter-styles.css \
             --file visitor-counter-styles.css \
             --content-type 'text/css' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
           
           # Upload images
           az storage blob upload \
@@ -104,8 +100,7 @@ jobs:
             --name images/Screenshot_1.png \
             --file images/Screenshot_1.png \
             --content-type 'image/png' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
             
           az storage blob upload \
             --account-name storresume1760986821 \
@@ -113,8 +108,7 @@ jobs:
             --name images/image.jpg \
             --file images/image.jpg \
             --content-type 'image/jpeg' \
-            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --overwrite
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
           
           echo "✅ Frontend deployed successfully to Azure Storage"
 
