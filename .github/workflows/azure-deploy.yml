@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.11'
 
     - name: Install dependencies
       run: |
@@ -32,14 +32,6 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Deploy ARM template to Azure
-      uses: azure/arm-deploy@v1
-      with:
-        subscriptionId: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
-        resourceGroupName: rg-cloud-resume
-        template: ./arm-template.json
-        parameters: ./arm-parameters.json
-        deploymentMode: Incremental
     - name: Deploy Azure Functions
       uses: azure/functions-action@v1
       with:
