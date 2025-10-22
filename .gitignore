@@ -1,71 +1,70 @@
 # Azure Functions
 .azure/
 .vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+__pycache__
+.Python
+build/
+develop-eggs/
+dist/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 local.settings.json
+.env
+
+# Azure and deployment artifacts
 *.zip
 *.tar.gz
+arm-template-*.json
+!arm-template.json
+deployment-*.json
+deployment-outputs.txt
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-.python_packages/
+# IDE and OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+*.code-workspace
 
-# Node.js
-node_modules/
+# Logs and temporary files
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.npm
+.eslintcache
 
-# Logs
-logs/
-*.log
+# Secrets and credentials (IMPORTANT!)
+azure-credentials.json
+*.key
+*.pem
+secrets.json
+config.json
+github-secrets.txt
 
-# OS
-.DS_Store
-Thumbs.db
+# Node modules (if any)
+node_modules/
 
-# IDE
-.vscode/
-.idea/
-
-# Build artifacts
-dist/
-build/
-
-# Temporary files
-*.tmp
-*.temp
-temp/
-
-# Azure CLI
-.azure/
-
-# Environment files
-.env
-.env.local
-
-# Package files (keeping only source code)
-packages.microsoft.gpg
+# Backup files
+backup-*/
+*.backup
+*.bak
 
 # Test files
 test-*.html
-*-debug.js
+test-*.js
 *-test.js
-
-# Backup and old files
-*-old.*
-*-backup.*
-*.backup
-*_old.*
-*_backup.*
-function_app_*.py
-
-# Deployment packages
-function-app*.zip
-*.gz
