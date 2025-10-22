@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timezone
 from azure.data.tables import TableServiceClient, TableEntity
 from azure.core.exceptions import ResourceNotFoundError, ServiceRequestError
+from azure.core.credentials import AzureKeyCredential
 import uuid
 
 # Configure logging
@@ -26,16 +27,23 @@ class TableStorageManager:
             self.account_name = os.environ.get('COSMOS_DB_ACCOUNT_NAME', 'cosmos-resume-1760986821')
             self.account_key = os.environ.get('COSMOS_DB_KEY')
             self.table_name = os.environ.get('COSMOS_DB_TABLE', 'VisitorCounter')
+            self.connection_string = os.environ.get('COSMOS_DB_CONNECTION_STRING')
             
-            if not self.account_key:
-                raise ValueError("CosmosDB account key not found in environment variables")
+            if not self.connection_string and not self.account_key:
+                raise ValueError("CosmosDB connection string or account key not found in environment variables")
             
-            # Create Table Service Client
-            account_url = f"https://{self.account_name}.table.cosmos.azure.com/"
-            self.table_service_client = TableServiceClient(
-                endpoint=account_url,
-                credential=self.account_key
-            )
+            # Create Table Service Client using connection string (preferred for CosmosDB)
+            if self.connection_string:
+                self.table_service_client = TableServiceClient.from_connection_string(
+                    conn_str=self.connection_string
+                )
+            else:
+                # Fallback to endpoint + key
+                account_url = f"https://{self.account_name}.table.cosmos.azure.com/"
+                self.table_service_client = TableServiceClient(
+                    endpoint=account_url,
+                    credential=AzureKeyCredential(self.account_key)
+                )
             
             # Get table client
             self.table_client = self.table_service_client.get_table_client(
