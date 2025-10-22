@@ -28,7 +28,7 @@ A complete cloud resume website built with Azure services, featuring real-time v
 - **Real-time Visitor Counter**: Tracks page views using Azure Functions and CosmosDB
 - **Custom Domain**: SSL-secured custom domain with Azure Front Door CDN
 - **Global Performance**: Azure Front Door provides global content delivery
-- **Infrastructure as Code**: Complete ARM templates for deployment automation
+- **Production Ready**: Fully deployed and operational Azure infrastructure
 - **CI/CD Ready**: GitHub Actions workflows for automated deployment
 
 ## 🛠️ Technology Stack
@@ -45,7 +45,7 @@ A complete cloud resume website built with Azure services, featuring real-time v
 
 ### Infrastructure
 - **Azure Front Door**: Global CDN with custom domain and SSL
-- **ARM Templates**: Infrastructure as Code for reproducible deployments
+- **Production Deployment**: Live infrastructure in Azure East US region
 - **Azure DNS**: Custom domain management and SSL certificates
 
 ## 📁 Project Structure
@@ -63,10 +63,7 @@ A complete cloud resume website built with Azure services, featuring real-time v
 │   └── script-simple.js       # Visitor counter JavaScript
 ├── 📁 scripts/
 │   ├── deploy-backend.sh      # Backend deployment script
-│   ├── deploy-frontend.sh     # Frontend deployment script
-│   └── validate-deployment.sh # Template validation
-├── arm-template.json          # Complete infrastructure template
-├── arm-parameters.json        # Deployment parameters
+│   └── deploy-frontend.sh     # Frontend deployment script
 └── README.md                  # This file
 ```
 
