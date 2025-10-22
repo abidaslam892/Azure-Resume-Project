@@ -10,7 +10,7 @@ from azure.core.exceptions import ResourceNotFoundError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize the Azure Function App - GitHub Deployment Oct 23, 2025
+# Initialize the Azure Function App - Extension Bundle Fix Oct 23, 2025
 app = func.FunctionApp()
 
 def get_table_client():
