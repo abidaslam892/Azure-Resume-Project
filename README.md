@@ -371,4 +371,4 @@ This project implements all requirements of the Azure Cloud Resume Challenge:
 
 ---
 
-**Built with ❤️ using Azure Cloud Services**
+**Built with ❤️ using Azure Cloud Services**# Azure Resume Project
